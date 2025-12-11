@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SendLoginDetailsMail;
 
 class AuthController extends Controller
 {
@@ -18,19 +20,28 @@ class AuthController extends Controller
      */
     public function signup(RegisterRequest $request)
     {
+        // Validate & keep the plain password for email
         $data = $request->validated();
+        $plainPassword = $data['password'];
 
+        // Create user
         $user = User::create([
             'first_name' => $data['first_name'],
             'last_name'  => $data['last_name'],
             'name'       => $data['first_name'] . ' ' . $data['last_name'],
             'email'      => $data['email'],
-            'mobile'     => $data['mobile'],
-            'password'   => Hash::make($data['password']),
+            'mobile'     => $data['mobile'] ?? null,
+            'password'   => Hash::make($plainPassword),
         ]);
 
+        // Create personal access token (sanctum)
         $token = $user->createToken('mobile')->plainTextToken;
 
+        // Send login details email (send synchronously)
+        // If you want to queue the mail, use ->queue(...) and implement ShouldQueue on the Mailable.
+        Mail::to($user->email)->send(new SendLoginDetailsMail($user, $plainPassword));
+
+        // Return JSON response
         return response()->json([
             'status'  => true,
             'message' => 'Registration successful.',
@@ -39,7 +50,7 @@ class AuthController extends Controller
                 'token'      => $token,
                 'token_type' => 'Bearer',
             ],
-        ], 201);
+        ], 200);
     }
 
 
@@ -57,24 +68,25 @@ class AuthController extends Controller
             ], 401);
         }
 
-        /** @var User $user */
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // revoke old tokens if you want a single-session policy
+        // Optional: Revoke old tokens for single-session login behavior
         $user->tokens()->delete();
 
         $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Login successful.',
-            'data' => [
-                'user'  => $user,
-                'token' => $token,
+            'data'    => [
+                'user'       => new UserResource($user),
+                'token'      => $token,
                 'token_type' => 'Bearer',
             ],
-        ]);
+        ], 200);
     }
+
 
     /**
      * POST /api/auth/logout
@@ -98,9 +110,19 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        // // Check if user is authenticated
+        // if (!$request->user()) {
+        //     return response()->json([
+        //         'status'  => false,
+        //         'message' => 'Unauthenticated.',
+        //     ], 401);
+        // }
+
+        // Authenticated → return user resource
         return response()->json([
-            'status' => true,
-            'data'   => $request->user(),
+            'status'  => true,
+            'message' => 'User retrieved successfully.',
+            'data'    => new UserResource($request->user()),
         ]);
     }
 }
