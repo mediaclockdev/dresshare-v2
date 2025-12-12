@@ -33,7 +33,7 @@ class OtpPasswordController extends Controller
         if (!$user) {
             return response()->json([
                 'status' => true,
-                'message' => 'If this email exists, an OTP has been sent.'
+                'message' => 'Invalid Email Id !!.'
             ]);
         }
 
