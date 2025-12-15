@@ -24,4 +24,12 @@ class RegisterRequest extends FormRequest
             // password_confirmation is validated by "confirmed"
         ];
     }
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'Email address is required.',
+            'email.email'    => 'Please enter a valid email address.',
+            'email.unique'   => 'This email address is already registered.',
+        ];
+    }
 }
