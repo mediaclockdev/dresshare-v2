@@ -29,7 +29,7 @@ class RegisterRequest extends FormRequest
         return [
             'email.required' => 'Email address is required.',
             'email.email'    => 'Please enter a valid email address.',
-            'email.unique'   => 'This email address is already registered.',
+            'email.unique'   => 'This email address is already registered with us.',
         ];
     }
 }
