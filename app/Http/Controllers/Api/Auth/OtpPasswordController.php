@@ -32,8 +32,8 @@ class OtpPasswordController extends Controller
 
         if (!$user) {
             return response()->json([
-                'status' => true,
-                'message' => 'Invalid Email Id !!.'
+                'status' => false,
+                'message' => 'Please enter a registered email ID.'
             ]);
         }
 
